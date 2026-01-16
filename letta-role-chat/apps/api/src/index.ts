@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import roleRoutes from "./routes/roles";
 import messageRoutes from "./routes/messages";
 import { initDb } from "./storage/db";
+import "dotenv/config";
 
 dotenv.config();
 
