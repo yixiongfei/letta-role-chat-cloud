@@ -4,12 +4,13 @@ import { ChatWindow } from './components/ChatWindow';
 import { RoleEditor } from './components/RoleEditor';
 import { Role } from './types';
 import { api } from './services/api';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, RefreshCw } from 'lucide-react';
 
 function App() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     loadRoles();
@@ -27,10 +28,22 @@ function App() {
     }
   };
 
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      await api.syncRoles();
+      await loadRoles();
+    } catch (error) {
+      console.error('Sync failed', error);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const handleCreateRole = async (roleData: { name: string; persona: string; human: string }) => {
     try {
       const newRole = await api.createRole(roleData);
-      setRoles(prev => [...prev, newRole]);
+      setRoles(prev => [newRole, ...prev]);
       setSelectedRole(newRole);
       setIsEditorOpen(false);
     } catch (error) {
@@ -40,12 +53,25 @@ function App() {
 
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden font-sans">
-      <RoleList 
-        roles={roles} 
-        selectedRoleId={selectedRole?.id} 
-        onSelectRole={setSelectedRole}
-        onCreateClick={() => setIsEditorOpen(true)}
-      />
+      <div className="flex flex-col border-r bg-gray-50">
+        <div className="p-4 border-b flex items-center justify-between bg-white">
+          <h1 className="font-bold text-xl text-blue-600">Letta Chat</h1>
+          <button 
+            onClick={handleSync}
+            disabled={isSyncing}
+            className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${isSyncing ? 'animate-spin text-blue-400' : 'text-gray-500'}`}
+            title="Sync from Letta Cloud"
+          >
+            <RefreshCw size={20} />
+          </button>
+        </div>
+        <RoleList 
+          roles={roles} 
+          selectedRoleId={selectedRole?.id} 
+          onSelectRole={setSelectedRole}
+          onCreateClick={() => setIsEditorOpen(true)}
+        />
+      </div>
       
       <main className="flex-1 flex flex-col min-w-0">
         {selectedRole ? (

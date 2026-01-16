@@ -1,23 +1,31 @@
-
 import { Router } from "express";
 import { messageService } from "../letta/message.service";
-import { store } from "../storage/memoryStore";
+import { agentService } from "../letta/agent.service";
 
 const router = Router();
 
-// POST /api/messages/:roleId
+/**
+ * 发送消息（流式）
+ * POST /api/messages/:roleId
+ */
 router.post("/:roleId", async (req, res) => {
   const { roleId } = req.params;
   const { message } = req.body;
 
-  const role = store.getRole(roleId);
-  if (!role?.agentId) {
-    return res.status(404).json({ error: "Role or Agent not found" });
-  }
+  try {
+    // 从数据库获取角色信息以获取 agentId
+    const role = await agentService.getRole(roleId);
+    if (!role || !role.agentId) {
+      return res.status(404).json({ error: "Role or Agent not found" });
+    }
 
-  // ✅ v0.x LettaClient：走 agent 级 streaming（不使用 conversations）
-  await messageService.sendMessageStream(role.agentId, message, res);
+    await messageService.sendMessageStream(roleId, role.agentId, message, res);
+  } catch (error) {
+    console.error("Route error:", error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
 });
 
 export default router;
-``

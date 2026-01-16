@@ -13,6 +13,20 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ role }) => {
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // 加载历史记录
+  useEffect(() => {
+    const loadHistory = async () => {
+      setMessages([]);
+      try {
+        const history = await api.getHistory(role.id);
+        setMessages(history);
+      } catch (error) {
+        console.error('Failed to load history:', error);
+      }
+    };
+    loadHistory();
+  }, [role.id]);
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -23,7 +37,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ role }) => {
     if (!input.trim() || isLoading) return;
 
     const userMsg: Message = {
-      id: Date.now().toString(),
+      id: 'user-' + Date.now(),
       role: 'user',
       content: input,
       timestamp: Date.now(),
@@ -33,25 +47,26 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ role }) => {
     setInput('');
     setIsLoading(true);
 
-    const assistantMsgId = (Date.now() + 1).toString();
+    const assistantMsgId = 'assistant-' + Date.now();
     let assistantContent = '';
 
     try {
       await api.sendMessageStream(role.id, input, (chunk) => {
         assistantContent += chunk;
         setMessages(prev => {
-          const filtered = prev.filter(m => m.id !== assistantMsgId);
-          return [...filtered, {
+          const otherMessages = prev.filter(m => m.id !== assistantMsgId);
+          return [...otherMessages, {
             id: assistantMsgId,
             role: 'assistant',
             content: assistantContent,
             timestamp: Date.now(),
           }];
         });
+      }, () => {
+        setIsLoading(false);
       });
     } catch (error) {
       console.error('Chat error:', error);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -82,7 +97,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ role }) => {
             </div>
           </div>
         ))}
-        {isLoading && !messages.some(m => m.role === 'assistant' && m.id.length > 10) && (
+        {isLoading && !messages.some(m => m.role === 'assistant' && m.id.startsWith('assistant-')) && (
           <div className="flex justify-start">
             <div className="bg-gray-100 p-3 rounded-2xl rounded-tl-none">
               <Loader2 className="animate-spin text-gray-400" size={20} />
@@ -99,12 +114,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ role }) => {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder={`Message ${role.name}...`}
-            className="flex-1 border rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             onClick={handleSend}
             disabled={isLoading || !input.trim()}
-            className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
             <Send size={20} />
           </button>

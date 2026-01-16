@@ -1,9 +1,9 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import rolesRoutes  from './routes/roles';
-import messageRoutes from './routes/messages';
-import { lettaClient } from "./letta/client";
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import roleRoutes from "./routes/roles";
+import messageRoutes from "./routes/messages";
+import { initDb } from "./storage/db";
 
 dotenv.config();
 
@@ -14,16 +14,20 @@ app.use(cors());
 app.use(express.json());
 
 // 路由注册
-app.use('/api/roles', rolesRoutes);
-app.use('/api/messages', messageRoutes);
+app.use("/api/roles", roleRoutes);
+app.use("/api/messages", messageRoutes);
 
 // 错误处理中间件
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+  res.status(500).json({ error: "Something went wrong!" });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-  console.log("messages keys:", Object.keys((lettaClient as any).agents.messages));
+// 初始化数据库并启动服务器
+initDb().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+  });
+}).catch(err => {
+  console.error("Failed to start server due to DB error:", err);
 });

@@ -15,8 +15,20 @@ export const api = {
     return res.json();
   },
 
+  async syncRoles() {
+    const res = await fetch(`${API_BASE_URL}/roles/sync`, {
+      method: 'POST',
+    });
+    return res.json();
+  },
+
+  async getHistory(roleId: string) {
+    const res = await fetch(`${API_BASE_URL}/roles/${roleId}/history`);
+    return res.json();
+  },
+
   // 流式消息发送
-  async sendMessageStream(roleId: string, message: string, onChunk: (chunk: string) => void) {
+  async sendMessageStream(roleId: string, message: string, onChunk: (chunk: string) => void, onDone: () => void) {
     const response = await fetch(`${API_BASE_URL}/messages/${roleId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -30,22 +42,30 @@ export const api = {
 
     while (true) {
       const { value, done } = await reader.read();
-      if (done) break;
+      if (done) {
+        onDone();
+        break;
+      }
 
-      const chunk = decoder.decode(value);
+      const chunk = decoder.decode(value, { stream: true });
       const lines = chunk.split('\n');
       
       for (const line of lines) {
         if (line.startsWith('data: ')) {
-          const data = line.slice(6);
-          if (data === '[DONE]') break;
+          const dataStr = line.slice(6).trim();
+          if (dataStr === '[DONE]') {
+            onDone();
+            return;
+          }
           try {
-            const parsed = JSON.parse(data);
-            if (parsed.content) {
-              onChunk(parsed.content);
+            const data = JSON.parse(dataStr);
+            if (data.choices?.[0]?.delta?.content) {
+              onChunk(data.choices[0].delta.content);
+            } else if (data.content) {
+              onChunk(data.content);
             }
           } catch (e) {
-            console.error('Error parsing SSE data', e);
+            // 忽略非 JSON 行
           }
         }
       }
