@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Role, Message } from '../types';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, User } from 'lucide-react';
+import { Live2DModelView } from './Live2DModel';
 import { api } from '../services/api';
 
 interface ChatWindowProps {
@@ -72,16 +73,27 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ role }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-white">
-      <div className="p-4 border-b bg-white flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-          {role.name[0]}
+    <div className="flex-1 flex flex-col h-full bg-white relative">
+      <div className="p-4 border-b bg-white flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+            {role.name[0]}
+          </div>
+          <div>
+            <h2 className="font-bold text-gray-800">{role.name}</h2>
+            <p className="text-xs text-green-500 flex items-center gap-1">
+              <span className="w-2 h-2 bg-green-500 rounded-full"></span> Online
+            </p>
+          </div>
         </div>
-        <div>
-          <h2 className="font-bold text-gray-800">{role.name}</h2>
-          <p className="text-xs text-green-500 flex items-center gap-1">
-            <span className="w-2 h-2 bg-green-500 rounded-full"></span> Online
-          </p>
+        <div className="flex items-center gap-2">
+          <div className="w-24 h-24 border rounded-lg overflow-hidden bg-gray-50 shadow-inner">
+             <Live2DModelView 
+               modelUrl="https://cdn.jsdelivr.net/gh/guansss/pixi-live2d-display/test/assets/hiyori/hiyori_pro_t10.model3.json"
+               width={96}
+               height={96}
+             />
+          </div>
         </div>
       </div>
 
