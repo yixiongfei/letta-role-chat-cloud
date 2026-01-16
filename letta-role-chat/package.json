@@ -1,0 +1,11 @@
+{
+  "name": "letta-role-chat",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
